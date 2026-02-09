@@ -12,7 +12,7 @@ std::string ipToString(uint32_t ipAddress) {
     if(inet_ntop(AF_INET, &addr, buffer, INET_ADDRSTRLEN)) {
         return std::string(buffer);
     }
-    return "Invalid IP";
+    return "Invalid IP"; //TODO: add correct exception when created
 }
 
 void Router::handlePacket(std::vector<unsigned char>& buffer, ssize_t length, TunDevice& device) {
@@ -29,7 +29,7 @@ void Router::handlePacket(std::vector<unsigned char>& buffer, ssize_t length, Tu
         handleICMP(ipHeader, buffer, length, device);
         
     } else {
-        std::cout << std::format("This protocol {} is not supported yet \n", ipHeader->protocol);
+        std::cout << std::format("This protocol {} is not supported yet \n", ipHeader->protocol); //TODO: add correct exception when created
     }
 }
 
@@ -38,7 +38,7 @@ void Router::handleICMP(Net::IPv4Header* ipHeader, std::vector<unsigned char>& b
     size_t requiredLen = ipHeaderLen + sizeof(Net::ICMPHeader);
     
     if(static_cast<size_t>(length) < requiredLen) {
-        std::cout << "   [ERROR] Packet too short! Received: " << length 
+        std::cout << "   [ERROR] Packet too short! Received: " << length //TODO: add correct exception when created
                 << ", Required: " << requiredLen << std::endl;
         
                 return;

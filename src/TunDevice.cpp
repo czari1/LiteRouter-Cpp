@@ -12,7 +12,7 @@
 TunDevice::TunDevice(const std::string& name) : m_name(name), m_fd(-1) {
 
     if ((m_fd = ::open("/dev/net/tun", O_RDWR)) < 0) {
-        throw std::runtime_error("Opening error /dev/net/tun. Root permission?");
+        throw std::runtime_error("Opening error /dev/net/tun. Root permission?"); //TODO: add correct exception when created
     }
 
     struct ifreq ifr;
@@ -24,7 +24,7 @@ TunDevice::TunDevice(const std::string& name) : m_name(name), m_fd(-1) {
 
     if (::ioctl(m_fd, TUNSETIFF, (void*) &ifr)) {
         ::close(m_fd);
-        throw std::runtime_error("ioctl error(TUNSETIFF). Cannot open an interface");
+        throw std::runtime_error("ioctl error(TUNSETIFF). Cannot open an interface"); //TODO: add correct exception when created
     }
 
     std::cout << std::format("Interface was created {} \n", name); 

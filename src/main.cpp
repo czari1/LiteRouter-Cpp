@@ -17,13 +17,13 @@ int main() {
 
     try {
         std::cout << "Router start \n";
-        std::cout << "0";
+    
         TunDevice tun("tun0");
-        std::cout << "1";
+        
         Router router;
-        std::cout << "2";
+        
         std::vector<unsigned char> buffer(2048);
-        std::cout << "3";
+        
         std::cout << std::format("Device {} is ready \n", tun.getName());
         std::cout << "Launch in second terminal this command: sudo ip link set dev tun0 up && sudo ip addr add 10.0.0.1/24 dev tun0\n";
         std::cout << "Press Ctrl+C to kill the process\n";
@@ -31,14 +31,14 @@ int main() {
         while (keepRunning) {
             ssize_t bytesRead = tun.read(buffer);
 
-            if (bytesRead < 0) break;
+            if (bytesRead < 0) break; //TODO: add correct exception when created
 
             if (bytesRead > 0) {
                 router.handlePacket(buffer, bytesRead, tun);
             }
         }
     } catch (const std::exception& e) {
-        std::cerr << "[Error]" << e.what() << "\n";
+        std::cerr << "[Error]" << e.what() << "\n"; //TODO: add correct exception when created
         return 1;
     }
     
