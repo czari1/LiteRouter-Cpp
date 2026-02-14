@@ -64,7 +64,8 @@ namespace Logging {
                     << moduleStr << message;
 
         std::stringstream consoleMessage;
-        consoleMessage  << "[" << timestamp << "]"
+        consoleMessage  << getColorCode(level)
+                        << "[" << timestamp << "]"
                         << "[" << std::setw(8) << std::left << levelStr << "] "
                         << "\033[0m"
                         << moduleStr
