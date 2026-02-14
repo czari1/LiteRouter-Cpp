@@ -1,8 +1,6 @@
 #include "Router.hpp"
 #include "Utils.hpp"
-#include <iostream>
 #include <arpa/inet.h>
-#include <format>
 
 std::string ipToString(uint32_t ipAddress) {
     char buffer[INET_ADDRSTRLEN];
@@ -12,59 +10,84 @@ std::string ipToString(uint32_t ipAddress) {
     if(inet_ntop(AF_INET, &addr, buffer, INET_ADDRSTRLEN)) {
         return std::string(buffer);
     }
-    return "Invalid IP"; //TODO: add correct exception when created
+    throw Exceptions::InvalidPacketException("Cannot convert IP address to string");
 }
 
 void Router::handlePacket(std::vector<unsigned char>& buffer, ssize_t length, TunDevice& device) {
-    
-    if (static_cast<size_t>(length) < sizeof(Net::IPv4Header)) return;
+    auto& logger = Logging::Logger::getInstance();
 
-    Net::IPv4Header* ipHeader = reinterpret_cast<Net::IPv4Header*>(buffer.data());
+    try {
+        if (static_cast<size_t>(length) < sizeof(Net::IPv4Header)) {
+            throw Exceptions::PacketTooShortException(length, sizeof(Net::IPv4Header));
+        }
 
-    if (ipHeader->protocol == 1) {
+        Net::IPv4Header* ipHeader = reinterpret_cast<Net::IPv4Header*>(buffer.data());
         
-        std::cout << "[Router] ICMP Packet: " << ipToString(ipHeader->src_addr) 
-                << " -> " << ipToString(ipHeader->dest_addr) << std::endl;
-        
+        uint8_t version = (ipHeader->version_ihl >> 4) & 0x0F;
+
+        if (version != 4) {
+            logger.warning("Non IPv4 packet received (version: " + std::to_string(version) + ")", "Router");
+            return;
+        }
+
+        if (ipHeader->protocol == 1) {
+            logger.info("ICMP packet: " + ipToString(ipHeader->src_addr) +
+        "->" + ipToString(ipHeader->dest_addr), "Router");
         handleICMP(ipHeader, buffer, length, device);
-        
-    } else {
-        std::cout << std::format("This protocol {} is not supported yet \n", ipHeader->protocol); //TODO: add correct exception when created
+
+        } else {
+            throw Exceptions::UnsupportedProtocolException(ipHeader->protocol);
+        }
+    } catch (const Exceptions::PacketTooShortException& e) {
+        logger.warning(e.what(), "Router");
+    } catch (const Exceptions::UnsupportedProtocolException& e) {
+        logger.debug(e.what(), "Router");
+    } catch (const Exceptions::PacketException& e) {
+        logger.error(e.what(), "Router");
     }
 }
 
 void Router::handleICMP(Net::IPv4Header* ipHeader, std::vector<unsigned char>& buffer, ssize_t length, TunDevice& device) {
-    size_t ipHeaderLen = (ipHeader->version_ihl & 0x0F) * 4;
-    size_t requiredLen = ipHeaderLen + sizeof(Net::ICMPHeader);
+    auto& logger = Logging::Logger::getInstance();
     
-    if(static_cast<size_t>(length) < requiredLen) {
-        std::cout << "   [ERROR] Packet too short! Received: " << length //TODO: add correct exception when created
-                << ", Required: " << requiredLen << std::endl;
+    try {
+        size_t ipHeaderLen = (ipHeader->version_ihl & 0x0F) * 4;
+        size_t requiredLen = ipHeaderLen + sizeof(Net::ICMPHeader);
         
-                return;
-    }
+        if(static_cast<size_t>(length) < requiredLen) {
+            throw Exceptions::PacketTooShortException(length, requiredLen);
+        }
 
-    Net::ICMPHeader* icmpHeader = reinterpret_cast<Net::ICMPHeader*>(buffer.data() + ipHeaderLen);
+        Net::ICMPHeader* icmpHeader = reinterpret_cast<Net::ICMPHeader*>(buffer.data() + ipHeaderLen);
 
-    if (icmpHeader->type == 8) {
-        std::cout << "   -> Ping request detected! Replying.." << std::endl;
-        
-        uint32_t tempIp = ipHeader->src_addr;
-        ipHeader->src_addr = ipHeader->dest_addr;
-        ipHeader->dest_addr = tempIp;
+        if (icmpHeader->type == 8) {
+            logger.info("Echo Request (Ping) - ID: " + std::to_string(ntohs(icmpHeader->icmp_id)) +
+                        ", Seq: " + std::to_string(ntohs(icmpHeader->sequence)), "ICMP");
+            
+            uint32_t tempIp = ipHeader->src_addr;
+            ipHeader->src_addr = ipHeader->dest_addr;
+            ipHeader->dest_addr = tempIp;
 
-        icmpHeader->type = 0;
-        icmpHeader->checksum = 0;
-        size_t icmpDataLength = length - ipHeaderLen;
-        
-        icmpHeader->checksum = Utils::calculateCheckSum(icmpHeader, icmpDataLength);
-        
-        ipHeader->header_checksum = 0;
-        ipHeader->header_checksum = Utils::calculateCheckSum(ipHeader, ipHeaderLen);
+            icmpHeader->type = 0;
+            icmpHeader->checksum = 0;
+            size_t icmpDataLength = length - ipHeaderLen;
+            
+            icmpHeader->checksum = Utils::calculateCheckSum(icmpHeader, icmpDataLength);
+            
+            ipHeader->header_checksum = 0;
+            ipHeader->header_checksum = Utils::calculateCheckSum(ipHeader, ipHeaderLen);
 
-        device.write(buffer, length);
+            device.write(buffer, length);
 
-    } else {
-        std::cout << "   [INFO] Ignored ICMP type: " << (int)icmpHeader->type << std::endl;
+            logger.info("Echo reply sent to: " + ipToString(ipHeader->dest_addr), "ICMP");
+
+        } else if (icmpHeader->type == 0) {
+            logger.debug("Echo Reply received (ignoring)", "ICMP");
+        } else {
+            logger.debug("ICMP type " + std::to_string(icmpHeader->type) + " not handled", "ICMP");
+        }
+
+    } catch (const Exceptions::PacketException& e) {
+        logger.warning(e.what(), "ICMP");
     }
 }
