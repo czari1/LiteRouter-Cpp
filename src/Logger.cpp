@@ -47,7 +47,7 @@ namespace Logging {
         m_fileOutput = enable;
     }
 
-    void Logger::log(LogLevel level, const std::string& message, const std::string& module = "") {
+    void Logger::log(LogLevel level, const std::string& message, const std::string& module) {
 
         if (level < m_currentLevel) {
             return;
