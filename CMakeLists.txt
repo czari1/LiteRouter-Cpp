@@ -14,6 +14,7 @@ set(SOURCES
     src/TunDevice.cpp
     src/Router.cpp
     src/Utils.cpp
+    src/Logger.cpp
 )
 
 add_executable(LiteRouter ${SOURCES})
