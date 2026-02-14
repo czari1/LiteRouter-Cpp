@@ -46,7 +46,7 @@ TunDevice::~TunDevice() {
 ssize_t TunDevice::read(std::vector<unsigned char>& buffer) {
     auto& logger = Logging::Logger::getInstance();
 
-    size_t bytesRead = ::read(m_fd, buffer.data(), buffer.size());
+    ssize_t bytesRead = ::read(m_fd, buffer.data(), buffer.size());
 
     if (bytesRead < 0) {
 
