@@ -3,7 +3,8 @@
 #include <string>
 #include <vector>
 #include <unistd.h>
-
+#include "Exceptions.hpp"
+#include "Logger.hpp"
 class TunDevice {
 public:
     explicit TunDevice(const std::string& name);
