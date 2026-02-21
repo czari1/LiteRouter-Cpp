@@ -19,7 +19,7 @@ int main(int argc, char* argv[]) {
 
     std::string interfaceName = "tun0";
 
-    for (int i = 1; 1 < argc; ++i) {
+    for (int i = 1; i < argc; ++i) {
         std::string arg = argv[i];
 
         if (arg == "-d" || arg == "--debug") {
