@@ -55,6 +55,3 @@ sudo ./run_test.sh
 - `src/Router.cpp` — packet handling
 - `tests/` — GoogleTest unit tests
 
-## License
-
-MIT — see [LICENSE](LICENSE).
