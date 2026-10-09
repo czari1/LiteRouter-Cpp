@@ -67,11 +67,11 @@ namespace Exceptions {
             : PacketException("Unsupported protocol: " + std::to_string(protocol)) {}
     };
 
-    class ChecksumMissmatchException : public PacketException {
+    class ChecksumMismatchException : public PacketException {
     public:
-        ChecksumMissmatchException(uint16_t expected, uint16_t actual)
-            : PacketException("Checksum missmatch. Expected: " + std::to_string(expected) + 
-            ", Actual: " + std::to_string(actual)) {} 
+        ChecksumMismatchException(uint16_t expected, uint16_t actual)
+            : PacketException("Checksum mismatch. Expected: " + std::to_string(expected) +
+            ", Actual: " + std::to_string(actual)) {}
     };
 
     class ConfigException : public RouterException {
