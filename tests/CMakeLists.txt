@@ -14,6 +14,7 @@ FetchContent_MakeAvailable(googletest)
 add_executable(literouter_unit_tests
     unit/test_utils.cpp
     unit/test_protocol_core.cpp
+    unit/test_routing_table.cpp
 )
 
 target_link_libraries(literouter_unit_tests

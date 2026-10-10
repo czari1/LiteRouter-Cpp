@@ -1,4 +1,7 @@
 #include "Logger.hpp"
+#include "Exceptions.hpp"
+
+#include <ctime>
 #include <iostream>
 
 namespace Logging {
@@ -33,7 +36,7 @@ namespace Logging {
         m_logFile.open(filename, std::ios::app) ;
 
         if (!m_logFile.is_open()) {
-            throw std::runtime_error("Failed to open log file \n"); //TODO: add correct exception when created 
+            throw Exceptions::ConfigException("Failed to open log file: " + filename);
         }
     }
 
@@ -48,12 +51,11 @@ namespace Logging {
     }
 
     void Logger::log(LogLevel level, const std::string& message, const std::string& module) {
+        std::lock_guard<std::mutex> lock(m_mutex);
 
         if (level < m_currentLevel) {
             return;
         }
-
-        std::lock_guard<std::mutex> lock(m_mutex);
         std::string timestamp = getCurrentTimestamp();
         std::string levelStr = logLevelToString(level);
         std::string moduleStr = module.empty() ? "" : "[" + module + "] ";
@@ -109,9 +111,13 @@ namespace Logging {
         auto now = std::chrono::system_clock::now();
         auto time = std::chrono::system_clock::to_time_t(now);
         auto ms = std::chrono::duration_cast<std::chrono::milliseconds>(now.time_since_epoch()) % 1000;
-        std::stringstream stringstream;
+        std::tm timeInfo{};
+        if (localtime_r(&time, &timeInfo) == nullptr) {
+            return "0000-00-00 00:00:00.000";
+        }
 
-        stringstream << std::put_time(localtime(&time), "%Y-%m-%d %H-%M-%S");
+        std::stringstream stringstream;
+        stringstream << std::put_time(&timeInfo, "%Y-%m-%d %H:%M:%S");
         stringstream << '.' << std::setfill('0') << std::setw(3) << ms.count();
         
         return stringstream.str();

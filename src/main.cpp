@@ -31,33 +31,41 @@ int main(int argc, char* argv[]) {
 
     std::string interfaceName = "tun0";
 
-    for (int i = 1; i < argc; ++i) {
-        std::string arg = argv[i];
-
-        if (arg == "-d" || arg == "--debug") {
-            logger.setLogLevel(Logging::LogLevel::DEBUG);
-        } else if ((arg == "-l" || arg == "--logfile") && i + 1 < argc) {
-            logger.setLogFile(argv[++i]);
-            logger.enableFileOutput(true);
-        } else if ((arg == "-i" || arg == "--interface") && i + 1 < argc) {
-            interfaceName = argv[++i];
-        } else if (arg == "-q" || arg == "--quiet") {
-            logger.enableConsoleOutput(false);
-        } else if (arg == "-h" || arg == "--help") {
-            std::cout << "Usage: LiteRouter [OPTIONS]\n"
-                    << "  -d, --debug              Enable debug logging\n"
-                    << "  -l, --logfile  <file>    Write logs to file\n"
-                    << "  -i, --interface <name>   TUN interface name (default: tun0)\n"
-                    << "  -q, --quiet              Disable console output\n"
-                    << "  -h, --help               Show this help message\n";
-            return 0;
-        } else {
-            logger.error("Unknown option: " + arg, "Main"); 
-            return 1;
-        }
-    }
-
     try {
+        for (int i = 1; i < argc; ++i) {
+            std::string arg = argv[i];
+
+            if (arg == "-d" || arg == "--debug") {
+                logger.setLogLevel(Logging::LogLevel::DEBUG);
+            } else if (arg == "-l" || arg == "--logfile") {
+                if (i + 1 >= argc) {
+                    logger.error("Missing argument for " + arg, "Main");
+                    return 1;
+                }
+                logger.setLogFile(argv[++i]);
+                logger.enableFileOutput(true);
+            } else if (arg == "-i" || arg == "--interface") {
+                if (i + 1 >= argc) {
+                    logger.error("Missing argument for " + arg, "Main");
+                    return 1;
+                }
+                interfaceName = argv[++i];
+            } else if (arg == "-q" || arg == "--quiet") {
+                logger.enableConsoleOutput(false);
+            } else if (arg == "-h" || arg == "--help") {
+                std::cout << "Usage: LiteRouter [OPTIONS]\n"
+                        << "  -d, --debug              Enable debug logging\n"
+                        << "  -l, --logfile  <file>    Write logs to file\n"
+                        << "  -i, --interface <name>   TUN interface name (default: tun0)\n"
+                        << "  -q, --quiet              Disable console output\n"
+                        << "  -h, --help               Show this help message\n";
+                return 0;
+            } else {
+                logger.error("Unknown option: " + arg, "Main");
+                return 1;
+            }
+        }
+
         installSignalHandlers();
 
         logger.info("LiteRouter starting (ICMP Echo on TUN)");
@@ -68,7 +76,8 @@ int main(int argc, char* argv[]) {
         
         logger.info("Configure the interface with:", "Main");
         logger.info("  sudo ip link set dev " + interfaceName + " up", "Main");
-        logger.info("  sudo ip addr add 10.0.0.1/24 dev " + interfaceName, "Main");
+        logger.info("  sudo ip addr add 10.0.0.2/24 dev " + interfaceName, "Main");
+        logger.info("  ping -c 3 10.0.0.1", "Main");
         logger.info("Press Ctrl+C to stop", "Main");
         logger.info("Or use run_test.sh file", "Main");
 

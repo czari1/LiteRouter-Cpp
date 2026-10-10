@@ -59,13 +59,17 @@ ssize_t TunDevice::read(std::vector<unsigned char>& buffer) {
         throw Exceptions::TunDeviceReadException(strerror(errno));
     }
 
-    logger.debug("Read " + std::to_string(bytesRead) + "bytes.", "TunDevice");
+    logger.debug("Read " + std::to_string(bytesRead) + " bytes", "TunDevice");
     
     return bytesRead;
 }
 
 ssize_t TunDevice::write(const std::vector<unsigned char>& buffer, size_t size) {
     auto& logger = Logging::Logger::getInstance();
+
+    if (size > buffer.size()) {
+        throw Exceptions::TunDeviceWriteException("Write size exceeds buffer");
+    }
 
     ssize_t bytesWritten = ::write(m_fd, buffer.data(), size);
 
@@ -75,7 +79,7 @@ ssize_t TunDevice::write(const std::vector<unsigned char>& buffer, size_t size) 
     }
 
     if (static_cast<size_t>(bytesWritten) != size) {
-        logger.warning("Partial write: " + std::to_string(bytesWritten) + "/" + std::to_string(size) + "bytes", "TunDevice");
+        logger.warning("Partial write: " + std::to_string(bytesWritten) + "/" + std::to_string(size) + " bytes", "TunDevice");
     } else {
         logger.debug("Wrote " + std::to_string(bytesWritten) + " bytes", "TunDevice");
     }

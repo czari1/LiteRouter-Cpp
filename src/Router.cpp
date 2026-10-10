@@ -39,14 +39,14 @@ void Router::handlePacket(std::vector<unsigned char>& buffer, ssize_t length, Tu
     auto& logger = Logging::Logger::getInstance();
 
     try {
-        if (static_cast<size_t>(length) < sizeof(Net::IPv4Header)) {
-            throw Exceptions::PacketTooShortException(length, sizeof(Net::IPv4Header));
+        if (length <= 0 || static_cast<size_t>(length) < sizeof(Net::IPv4Header)) {
+            const size_t received = length > 0 ? static_cast<size_t>(length) : 0U;
+            throw Exceptions::PacketTooShortException(received, sizeof(Net::IPv4Header));
         }
 
         Net::IPv4Header* ipHeader = reinterpret_cast<Net::IPv4Header*>(buffer.data());
-        
-        uint8_t version = (ipHeader->version_ihl >> 4) & 0x0F;
 
+        const uint8_t version = (ipHeader->version_ihl >> 4) & 0x0F;
         if (version != 4) {
             logger.warning("Non IPv4 packet received (version: " + std::to_string(version) + ")", "Router");
             return;
@@ -59,13 +59,26 @@ void Router::handlePacket(std::vector<unsigned char>& buffer, ssize_t length, Tu
         }
         const size_t ipHeaderLen = *ipHeaderLenOpt;
 
+        const uint16_t totalLength = ntohs(ipHeader->total_length);
+        if (totalLength < ipHeaderLen || static_cast<size_t>(totalLength) > static_cast<size_t>(length)) {
+            throw Exceptions::InvalidPacketException("IPv4 total length does not match the received packet");
+        }
+        length = static_cast<ssize_t>(totalLength);
+
         verifyIpHeaderChecksum(ipHeader, ipHeaderLen);
+
+        const uint16_t fragmentation = ntohs(ipHeader->flags_frag_offset);
+        const bool moreFragments = (fragmentation & 0x2000U) != 0;
+        const bool hasOffset = (fragmentation & 0x1FFFU) != 0;
+        if (moreFragments || hasOffset) {
+            logger.debug("Ignoring fragmented IPv4 packet", "Router");
+            return;
+        }
 
         if (ipHeader->protocol == 1) {
             logger.info("ICMP packet: " + ipToString(ipHeader->src_addr) +
-        "->" + ipToString(ipHeader->dest_addr), "Router");
-        handleICMP(ipHeader, buffer, length, device, ipHeaderLen);
-
+                        " -> " + ipToString(ipHeader->dest_addr), "Router");
+            handleICMP(ipHeader, buffer, length, device, ipHeaderLen);
         } else {
             throw Exceptions::UnsupportedProtocolException(ipHeader->protocol);
         }

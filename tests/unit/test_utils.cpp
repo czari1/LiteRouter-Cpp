@@ -2,19 +2,18 @@
 #include "Utils.hpp"
 #include "ProtocolDefinition.hpp"
 
+#include <cstring>
+
 TEST(UtilsChecksum, EmptyBufferReturnsOnesComplement) {
     uint8_t byte = 0;
     EXPECT_EQ(Utils::calculateCheckSum(&byte, 0), 0xFFFF);
 }
 
-TEST(UtilsChecksum, SelfConsistentOverBuffer) {
+TEST(UtilsChecksum, ValidPacketRecalculatesToZero) {
     unsigned char packet[] = {0x08, 0x00, 0x00, 0x00, 0x12, 0x34, 0x00, 0x01};
     const uint16_t computed = Utils::calculateCheckSum(packet, sizeof(packet));
-    packet[2] = static_cast<unsigned char>(computed >> 8);
-    packet[3] = static_cast<unsigned char>(computed & 0xFF);
-    packet[2] = 0;
-    packet[3] = 0;
-    EXPECT_EQ(Utils::calculateCheckSum(packet, sizeof(packet)), computed);
+    std::memcpy(packet + 2, &computed, sizeof(computed));
+    EXPECT_EQ(Utils::calculateCheckSum(packet, sizeof(packet)), 0);
 }
 
 TEST(Ipv4HeaderLength, RejectsIhlBelowFive) {

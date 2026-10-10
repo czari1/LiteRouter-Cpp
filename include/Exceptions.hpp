@@ -15,7 +15,7 @@ namespace Exceptions {
     class TunDeviceException : public RouterException {
     public:
         explicit TunDeviceException(const std::string& message)
-            : RouterException("TUN DEvice Error: " + message) {}
+            : RouterException("TUN device error: " + message) {}
     };
 
     class TunDeviceOpenException : public TunDeviceException {
@@ -58,7 +58,7 @@ namespace Exceptions {
     public:
         explicit PacketTooShortException(size_t received, size_t required)
             : InvalidPacketException("Packet too short. Received: " + std::to_string(received) 
-                                    +   " bytes. Required: " + std::to_string(required) + "bytes.") {}
+                                    + " bytes. Required: " + std::to_string(required) + " bytes.") {}
     };
 
     class UnsupportedProtocolException : public PacketException {
@@ -83,6 +83,6 @@ namespace Exceptions {
     class InvalidConfigException : public ConfigException {
     public: 
         explicit InvalidConfigException(const std::string& parameter)
-            : ConfigException("Invalid confuguration parameter: " + parameter) {}
+            : ConfigException("Invalid configuration parameter: " + parameter) {}
     };
 }

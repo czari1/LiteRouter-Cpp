@@ -4,7 +4,7 @@
 #include <optional>
 
 namespace Utils {
-    /** Internet checksum (RFC 1071). Multi-byte fields in network byte order. */
+    /** Internet checksum (RFC 1071) in network byte order, for a uint16_t header field. */
     uint16_t calculateCheckSum(void* data, size_t length);
 
     /** Returns IPv4 header length in bytes, or nullopt if IHL or buffer size is invalid. */

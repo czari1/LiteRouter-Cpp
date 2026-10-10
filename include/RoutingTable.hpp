@@ -1,22 +1,21 @@
 #pragma once
 
+#include <cstdint>
+#include <optional>
 #include <string>
 #include <vector>
-#include <optional>
-#include <cstdint>
-#include <arpa/inet.h>
 
 namespace Net {
-    
-    struct __attribute__((packed)) RouteEntry {
+
+    // Addresses are IPv4 values in network byte order (inet_pton / htonl).
+    struct RouteEntry {
         uint32_t destination;
         uint32_t netmask;
         uint32_t next_hop;
         std::string interface;
         uint8_t prefix_length;
         uint32_t metric;
-    
-    
+
         bool matchesIPdest(uint32_t destIP) const {
             return (destIP & netmask) == (destination & netmask);
         }
@@ -32,22 +31,24 @@ namespace Net {
     public:
         RoutingTable() = default;
 
-        bool addRoute(uint32_t destination, uint8_t prefix_length, 
-                    uint32_t next_hop, const std::string interface,
-                    uint32_t metric = 0);
+        bool addRoute(uint32_t destination, uint8_t prefix_length,
+                      uint32_t next_hop, const std::string& interfaceName,
+                      uint32_t metric = 0);
 
-        bool addRoute (const std::string& destination, uint8_t prefix_length, 
-                    const std::string& next_hop, const std::string& interface,
-                    uint32_t metric = 0);
+        bool addRoute(const std::string& destination, uint8_t prefix_length,
+                      const std::string& next_hop, const std::string& interfaceName,
+                      uint32_t metric = 0);
 
         bool removeRoute(uint32_t destination, uint8_t prefix_length);
         void removeRoutesForInterface(const std::string& interface_name);
         std::optional<RouteEntry> lookup(uint32_t destIP) const;
         const std::vector<RouteEntry>& getRoutes() const;
+        // Lines: "dest/prefix next_hop interface [metric]". "-" next hop is directly connected.
         bool loadFromFile(const std::string& filename);
         bool saveToFile(const std::string& filename) const;
         void clearRoutes();
         size_t getTableSize() const;
+
     private:
         std::vector<RouteEntry> m_routes;
         void sortRoutes();
