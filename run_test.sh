@@ -1,7 +1,8 @@
 #!/bin/bash
+set -euo pipefail
 
 if [[ $EUID -ne 0 ]]; then
-    echo "This script have to be started with sudo permission"
+    echo "This script must be run with sudo"
     exit 1
 fi
 
@@ -14,19 +15,42 @@ if [[ ! -f "$ROUTER_BIN" ]]; then
     exit 1
 fi
 
-echo "Router setup"
+cleanup() {
+    if [[ -n "${ROUTER_PID:-}" ]] && kill -0 "$ROUTER_PID" 2>/dev/null; then
+        kill "$ROUTER_PID" 2>/dev/null || true
+        wait "$ROUTER_PID" 2>/dev/null || true
+    fi
+}
+trap cleanup EXIT
+
+echo "Starting ICMP responder on TUN..."
 $ROUTER_BIN &
 ROUTER_PID=$!
 
-sleep 1
+echo "Waiting for interface ${INTERFACE}..."
+for _ in $(seq 1 30); do
+    if ip link show "$INTERFACE" &>/dev/null; then
+        break
+    fi
+    sleep 0.2
+done
 
-echo "Configuration of interface $INTERFACE..."
-ip link set dev $INTERFACE up
-ip addr add $IP_ADDR dev $INTERFACE
+if ! ip link show "$INTERFACE" &>/dev/null; then
+    echo "[ERROR] Interface ${INTERFACE} did not appear in time"
+    exit 1
+fi
 
-echo "Testing PING"
-ping -c 3 10.0.0.1
+echo "Configuring ${INTERFACE}..."
+ip link set dev "$INTERFACE" up
+ip addr add "$IP_ADDR" dev "$INTERFACE" 2>/dev/null || true
 
-echo "Clean up"
-kill $ROUTER_PID
-echo "Test finished."
+echo "Testing ping..."
+ping -c 3 -W 2 10.0.0.1
+PING_STATUS=$?
+
+if [[ $PING_STATUS -ne 0 ]]; then
+    echo "[ERROR] ping failed with exit code ${PING_STATUS}"
+    exit "$PING_STATUS"
+fi
+
+echo "Integration test finished successfully."

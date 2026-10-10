@@ -10,5 +10,6 @@ public:
     void handlePacket(std::vector<unsigned char>& buffer, ssize_t length, TunDevice& device);
 
 private:
-    void handleICMP(Net::IPv4Header* ipHeader, std::vector<unsigned char>& buffer, ssize_t length, TunDevice& device);
+    void handleICMP(Net::IPv4Header* ipHeader, std::vector<unsigned char>& buffer, ssize_t length,
+                    TunDevice& device, size_t ipHeaderLen);
 };

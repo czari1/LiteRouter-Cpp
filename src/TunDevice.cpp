@@ -23,7 +23,8 @@ TunDevice::TunDevice(const std::string& name) : m_name(name), m_fd(-1) {
 
     ifr.ifr_flags = IFF_TUN | IFF_NO_PI;
 
-    std::strncpy(ifr.ifr_name, name.c_str(), IFNAMSIZ);
+    std::strncpy(ifr.ifr_name, name.c_str(), IFNAMSIZ - 1);
+    ifr.ifr_name[IFNAMSIZ - 1] = '\0';
 
     if (::ioctl(m_fd, TUNSETIFF, (void*) &ifr) < 0) {
         ::close(m_fd);
@@ -36,7 +37,7 @@ TunDevice::TunDevice(const std::string& name) : m_name(name), m_fd(-1) {
 }
 
 TunDevice::~TunDevice() {
-    if (m_fd > 0) {
+    if (m_fd >= 0) {
         Logging::Logger::getInstance().info("Closing TUN device: " + m_name, "TunDevice");
         ::close(m_fd);
         m_fd = -1;

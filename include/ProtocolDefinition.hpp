@@ -3,10 +3,11 @@
 
 namespace Net {
 
+    // Wire-format IPv4/ICMP headers: multi-byte fields are network byte order; struct is packed.
     struct __attribute__((packed)) IPv4Header {
         uint8_t version_ihl;
         uint8_t tos;
-        uint16_t total_lenght;
+        uint16_t total_length;
         uint16_t ipv4_id;
         uint16_t flags_frag_offset;
         uint8_t ttl;

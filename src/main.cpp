@@ -1,3 +1,5 @@
+#include <iostream>
+#include <stdexcept>
 #include <string>
 #include <vector>
 #include <csignal>
@@ -8,10 +10,20 @@
 
 volatile sig_atomic_t keepRunning = 1;
 
-void signalHandler(int signal) {
-    Logging::Logger::getInstance().info("Received signal " 
-        + std::to_string(signal) + " shutting down...", "Main");
+void signalHandler(int) {
     keepRunning = 0;
+}
+
+static void installSignalHandlers() {
+    struct sigaction action {};
+    action.sa_handler = signalHandler;
+    sigemptyset(&action.sa_mask);
+    action.sa_flags = 0;
+
+    if (sigaction(SIGINT, &action, nullptr) != 0 ||
+        sigaction(SIGTERM, &action, nullptr) != 0) {
+        throw std::runtime_error("Failed to install signal handlers");
+    }
 }
 
 int main(int argc, char* argv[]) {
@@ -46,7 +58,9 @@ int main(int argc, char* argv[]) {
     }
 
     try {
-        logger.info("LiteRouter starting");
+        installSignalHandlers();
+
+        logger.info("LiteRouter starting (ICMP Echo on TUN)");
 
         TunDevice tun(interfaceName);
         Router router;
@@ -81,6 +95,6 @@ int main(int argc, char* argv[]) {
         return 1;
     }
 
-    logger.info("=== Router Stopped ===", "Main");
+    logger.info("=== Stopped ===", "Main");
     return 0;
 }
